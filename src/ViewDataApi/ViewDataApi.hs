@@ -90,7 +90,7 @@ instance J.FromJSON OSSBucketInfo
 ---------------------------
 type OxygenAuth = "authentication" :> "v1" :> "authenticate" :> ReqBody '[FormUrlEncoded] OxygenClientInfo :> Post '[JSON] OxygenClientToken
 type OSSCreateBucket = "oss" :> "v2" :> "buckets" :> Header "Authorization" String :> ReqBody '[JSON] OSSBucketInfo :> Post '[JSON] OSSBucketInfo
-type OSSUpload = "oss" :> "v2" :> "buckets" :> Capture "bucketKey" String :> "objects" :> Capture "objectName" String :> Header "Authorization" String :> ReqBody '[OctetStream] BL.ByteString :> PostNoContent '[JSON] NoContent
+type OSSUpload = "oss" :> "v2" :> "buckets" :> Capture "bucketKey" String :> "objects" :> Capture "objectName" String :> Header "Authorization" String :> ReqBody '[OctetStream] BL.ByteString :> PutNoContent '[JSON] NoContent
 
 type RegisterViewingService = "viewingservice" :> "v1" :> "register" :> Header "Authorization" String :> ReqBody '[JSON] OSSBucketInfo :> Post '[JSON] OSSBucketInfo
 type CheckViewingServiceStatus = "viewingservice" :> "v1" :> Capture "base64ObjectURN" String :> "status" :> Header "Authorization" String :> GetNoContent '[JSON] NoContent
@@ -106,9 +106,9 @@ getToken ::  OxygenClientInfo -> Manager -> BaseUrl -> ExceptT ServantError IO O
 createOSSBucket ::  Maybe String -> OSSBucketInfo -> Manager -> BaseUrl -> ExceptT ServantError IO OSSBucketInfo
 ossUpload :: String -> String -> Maybe String -> BL.ByteString -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
 
-ossUploadFile :: String -> String -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
+ossUploadFile :: OxygenClientToken -> String -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
 ossUploadFile token bucketKey filePath manager url = do
    filecontent <- liftIO . BL.readFile $ filePath
-   ossUpload bucketKey (takeFileName filePath) (Just token) filecontent  manager url
+   ossUpload bucketKey (takeFileName filePath) (Just $ tokenHeaderValue token) filecontent  manager url
 
 getToken :<|> createOSSBucket :<|> ossUpload = client viewDataAPI
