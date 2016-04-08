@@ -12,9 +12,10 @@ module ViewDataApi
    , getToken
    , createOSSBucket
    , tokenHeaderValue
+   , ossUploadFile
    ) where
 
-import Control.Applicative
+import Control.Applicative as A
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
@@ -26,6 +27,8 @@ import GHC.Generics
 import Servant.API
 import Servant.Client
 import Network.HTTP.Client (Manager)
+import qualified Data.ByteString.Lazy as BL
+import System.FilePath.Posix
 
 import qualified Data.Text    as T
 import qualified Data.Text.IO as T
@@ -64,7 +67,7 @@ instance J.FromJSON OSSObjectPolicy where
    parseJSON (J.String "transient") = return Transient
    parseJSON (J.String "temporary") = return Temporary
    parseJSON (J.String "persistent") = return Persistent
-   parseJSON _ = empty
+   parseJSON _ = A.empty
 
 
 data OSSBucketInfo = OSSBucketInfo{
@@ -76,18 +79,36 @@ instance J.ToJSON OSSBucketInfo
 
 instance J.FromJSON OSSBucketInfo
 
+
+
+
+
+
+
 ---------------------------
 -- API Declaration
 ---------------------------
 type OxygenAuth = "authentication" :> "v1" :> "authenticate" :> ReqBody '[FormUrlEncoded] OxygenClientInfo :> Post '[JSON] OxygenClientToken
 type OSSCreateBucket = "oss" :> "v2" :> "buckets" :> Header "Authorization" String :> ReqBody '[JSON] OSSBucketInfo :> Post '[JSON] OSSBucketInfo
+type OSSUpload = "oss" :> "v2" :> "buckets" :> Capture "bucketKey" String :> "objects" :> Capture "objectName" String :> Header "Authorization" String :> ReqBody '[OctetStream] BL.ByteString :> PostNoContent '[JSON] NoContent
 
-type ViewDataAPI = OxygenAuth :<|> OSSCreateBucket
+type RegisterViewingService = "viewingservice" :> "v1" :> "register" :> Header "Authorization" String :> ReqBody '[JSON] OSSBucketInfo :> Post '[JSON] OSSBucketInfo
+type CheckViewingServiceStatus = "viewingservice" :> "v1" :> Capture "base64ObjectURN" String :> "status" :> Header "Authorization" String :> GetNoContent '[JSON] NoContent
+type GetViewingServiceObjectThumbnail = "viewingservice" :> "v1" :> "thumbnails" :> Header "Authorization" String :> Get '[OctetStream] BL.ByteString
+
+
+type ViewDataAPI = OxygenAuth :<|> OSSCreateBucket :<|> OSSUpload
 
 viewDataAPI :: Proxy ViewDataAPI
 viewDataAPI = Proxy
 
 getToken ::  OxygenClientInfo -> Manager -> BaseUrl -> ExceptT ServantError IO OxygenClientToken
 createOSSBucket ::  Maybe String -> OSSBucketInfo -> Manager -> BaseUrl -> ExceptT ServantError IO OSSBucketInfo
+ossUpload :: String -> String -> Maybe String -> BL.ByteString -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
 
-getToken :<|> createOSSBucket = client viewDataAPI
+ossUploadFile :: String -> String -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
+ossUploadFile token bucketKey filePath manager url = do
+   filecontent <- liftIO . BL.readFile $ filePath
+   ossUpload bucketKey (takeFileName filePath) (Just token) filecontent  manager url
+
+getToken :<|> createOSSBucket :<|> ossUpload = client viewDataAPI
