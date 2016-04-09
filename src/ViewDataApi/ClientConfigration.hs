@@ -14,25 +14,26 @@ module ViewDataApi.ClientConfigration
 
 import ViewDataApi
 
+import Servant.Client
+
 import Control.Applicative
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
-import Servant.Client
-import Network.HTTP.Client (Manager)
-
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString as BS
-import System.FilePath.Posix
-import System.Directory
-import Data.Aeson as J
-import Data.Aeson.TH
-import GHC.Generics
 
 import Data.Time
-
+import Data.Aeson as J
+import Data.Aeson.TH
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString as BS
 import qualified Data.Text    as T
 import qualified Data.Text.IO as T
+
+import System.FilePath.Posix
+import System.Directory
+
+import Network.HTTP.Client (Manager)
+import GHC.Generics
 
 data ClientInfoConfig = ClientInfoConfig{
       clientOxygenInfo :: OxygenClientInfo
