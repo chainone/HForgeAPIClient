@@ -71,7 +71,7 @@ getClientInfo path = do
 
 
 isAccessTokenFileFresh :: FilePath -> IO Bool
-isAccessTokenFileFresh path =  (< 3600.0) <$> (diffUTCTime <$> getCurrentTime <*> getModificationTime path)
+isAccessTokenFileFresh path = (< 3600.0) <$> (diffUTCTime <$> getCurrentTime <*> getModificationTime path)
 
 readAccessToken :: FilePath -> IO (Maybe OxygenClientToken)
 readAccessToken path = do
@@ -90,5 +90,6 @@ getAccessToken configPath tokenFilePath manager baseURL = do
                  Nothing -> do
                      liftIO $ putStrLn "Fetching token..."
                      st <- getServerAccessToken (clientOxygenInfo clientInfo) manager baseURL
+                     liftIO $ BL.writeFile tokenFilePath $ encode st
                      liftIO . putStrLn $ "Token is " ++ access_token st
                      return st

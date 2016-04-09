@@ -55,6 +55,7 @@ data OxygenClientToken = OxygenClientToken{
 }deriving (Eq, Show, Generic)
 
 instance J.FromJSON OxygenClientToken
+instance J.ToJSON OxygenClientToken
 
 tokenHeaderValue :: OxygenClientToken -> String
 tokenHeaderValue token = token_type token ++ " " ++ access_token token
