@@ -29,7 +29,9 @@ import Servant.API
 import Servant.Client
 import Network.HTTP.Client (Manager)
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString as BS
 import System.FilePath.Posix
+import System.Directory
 
 import qualified Data.Text    as T
 import qualified Data.Text.IO as T
@@ -39,7 +41,9 @@ import qualified Data.Text.IO as T
 data OxygenClientInfo = OxygenClientInfo{
       oxygenClientId :: Text
    ,  oxygenClientSecret :: Text
-} deriving (Eq, Show)
+} deriving (Eq, Show, Generic)
+instance J.FromJSON OxygenClientInfo
+instance J.ToJSON OxygenClientInfo
 
 instance ToFormUrlEncoded OxygenClientInfo where
    toFormUrlEncoded clientInfo = [("client_id", oxygenClientId clientInfo), ("client_secret", oxygenClientSecret clientInfo), ("grant_type", "client_credentials")]
@@ -77,7 +81,6 @@ data OSSBucketInfo = OSSBucketInfo{
 }deriving (Eq, Show, Generic)
 
 instance J.ToJSON OSSBucketInfo
-
 instance J.FromJSON OSSBucketInfo
 
 
