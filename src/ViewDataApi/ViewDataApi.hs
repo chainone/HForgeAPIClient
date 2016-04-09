@@ -20,6 +20,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import qualified Data.Aeson as J
+import Data.Aeson.TH
 import Data.Monoid
 import Data.Proxy
 import Data.Text (Text)
@@ -80,17 +81,30 @@ instance J.ToJSON OSSBucketInfo
 instance J.FromJSON OSSBucketInfo
 
 
+data OSSObjectInfo = OSSObjectInfo{
+      ossBucketKey :: String
+   ,  ossObjectId :: String
+   ,  ossObjectKey :: String
+   ,  ossObjectSize :: Int
+   ,  ossObjectLocation :: String
+}deriving (Eq, Show, Generic)
 
+ossObjectInfoFieldMapping "ossBucketKey" = "bucketKey"
+ossObjectInfoFieldMapping "ossObjectId" = "objectId"
+ossObjectInfoFieldMapping "ossObjectKey" = "objectKey"
+ossObjectInfoFieldMapping "ossObjectSize" = "size"
+ossObjectInfoFieldMapping "ossObjectLocation" = "location"
+ossObjectInfoFieldMapping s = s
 
-
-
+instance J.FromJSON OSSObjectInfo where
+  parseJSON = J.genericParseJSON (J.defaultOptions { fieldLabelModifier = ossObjectInfoFieldMapping })
 
 ---------------------------
 -- API Declaration
 ---------------------------
 type OxygenAuth = "authentication" :> "v1" :> "authenticate" :> ReqBody '[FormUrlEncoded] OxygenClientInfo :> Post '[JSON] OxygenClientToken
 type OSSCreateBucket = "oss" :> "v2" :> "buckets" :> Header "Authorization" String :> ReqBody '[JSON] OSSBucketInfo :> Post '[JSON] OSSBucketInfo
-type OSSUpload = "oss" :> "v2" :> "buckets" :> Capture "bucketKey" String :> "objects" :> Capture "objectName" String :> Header "Authorization" String :> ReqBody '[OctetStream] BL.ByteString :> PutNoContent '[JSON] NoContent
+type OSSUpload = "oss" :> "v2" :> "buckets" :> Capture "bucketKey" String :> "objects" :> Capture "objectName" String :> Header "Authorization" String :> ReqBody '[OctetStream] BL.ByteString :> Put '[JSON] OSSObjectInfo
 
 type RegisterViewingService = "viewingservice" :> "v1" :> "register" :> Header "Authorization" String :> ReqBody '[JSON] OSSBucketInfo :> Post '[JSON] OSSBucketInfo
 type CheckViewingServiceStatus = "viewingservice" :> "v1" :> Capture "base64ObjectURN" String :> "status" :> Header "Authorization" String :> GetNoContent '[JSON] NoContent
@@ -104,9 +118,9 @@ viewDataAPI = Proxy
 
 getToken ::  OxygenClientInfo -> Manager -> BaseUrl -> ExceptT ServantError IO OxygenClientToken
 createOSSBucket ::  Maybe String -> OSSBucketInfo -> Manager -> BaseUrl -> ExceptT ServantError IO OSSBucketInfo
-ossUpload :: String -> String -> Maybe String -> BL.ByteString -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
+ossUpload :: String -> String -> Maybe String -> BL.ByteString -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectInfo
 
-ossUploadFile :: OxygenClientToken -> String -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
+ossUploadFile :: OxygenClientToken -> String -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectInfo
 ossUploadFile token bucketKey filePath manager url = do
    filecontent <- liftIO . BL.readFile $ filePath
    ossUpload bucketKey (takeFileName filePath) (Just $ tokenHeaderValue token) filecontent  manager url
