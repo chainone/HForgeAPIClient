@@ -5,7 +5,11 @@
 
 module ViewDataApi.ClientConfigration
    (
-      getAccessToken
+      ClientInfoConfig(..)
+   ,  getAccessToken
+   ,  getOxygenClientInfo
+   ,  getBucketInfo
+   ,  uploadFile
    )where
 
 import ViewDataApi
@@ -44,31 +48,22 @@ readJSONFromFile path = do
    if exist then decodeStrict <$> BS.readFile path
             else return Nothing
 
-getClientConfigFromUserInput :: IO ClientInfoConfig
-getClientConfigFromUserInput = do
+getOxygenClientConfigFromUserInput :: IO OxygenClientInfo
+getOxygenClientConfigFromUserInput = do
          putStrLn "Enter your Autodesk Forge Client Id:"
          cid <- T.getLine
          putStrLn "Enter your Autodesk Forge Client Secret:"
          csecret <- T.getLine
-         putStrLn "Enter the bucket name you want to upload files to:"
-         bn <- getLine
-         return $ ClientInfoConfig (OxygenClientInfo cid csecret) (OSSBucketInfo bn Temporary)
+         return $ OxygenClientInfo cid csecret
 
--- readClientConfigFromFile :: FilePath -> IO (Maybe ClientInfoConfig)
--- readClientConfigFromFile path = do
---    exist <- doesFileExist path
---    if exist then fmap decodeStrict $ BS.readFile path
---             else return Nothing
-
-getClientInfo :: FilePath -> IO ClientInfoConfig
-getClientInfo path = do
-   cic <- readJSONFromFile path :: IO (Maybe ClientInfoConfig)
+getOxygenClientInfo :: FilePath -> IO OxygenClientInfo
+getOxygenClientInfo path = do
+   cic <- readJSONFromFile path :: IO (Maybe OxygenClientInfo)
    case cic of Just cfg -> return cfg
                Nothing -> do
-                  cfg <- getClientConfigFromUserInput
+                  cfg <- getOxygenClientConfigFromUserInput
                   BL.writeFile path $ encode cfg
                   return cfg
-
 
 isAccessTokenFileFresh :: FilePath -> IO Bool
 isAccessTokenFileFresh path = (< 3600.0) <$> (diffUTCTime <$> getCurrentTime <*> getModificationTime path)
@@ -82,14 +77,32 @@ readAccessToken path = do
                               else return Nothing
                  Nothing -> return Nothing
 
-getAccessToken :: FilePath -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO OxygenClientToken
-getAccessToken configPath tokenFilePath manager baseURL = do
-   clientInfo <- liftIO $ getClientInfo configPath
+getAccessToken :: OxygenClientInfo -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO OxygenClientToken
+getAccessToken info tokenFilePath manager baseURL = do
    token <- liftIO $ readAccessToken tokenFilePath
    case token of Just t -> return t
                  Nothing -> do
                      liftIO $ putStrLn "Fetching token..."
-                     st <- getServerAccessToken (clientOxygenInfo clientInfo) manager baseURL
+                     st <- getServerAccessToken info manager baseURL
                      liftIO $ BL.writeFile tokenFilePath $ encode st
                      liftIO . putStrLn $ "Token is " ++ access_token st
                      return st
+
+
+getBucketInfo :: OxygenClientToken -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO OSSBucketInfo
+getBucketInfo token path manager baseURL = do
+            bucketInfo <- liftIO (readJSONFromFile path :: IO (Maybe OSSBucketInfo))
+            case bucketInfo of Just b -> return b
+                               Nothing -> do
+                                  liftIO $ putStrLn "Enter the bucket name you want to create:"
+                                  name <- liftIO getLine
+                                  liftIO $ putStrLn "Creating bucket..."
+                                  bkt <- createOSSBucket (Just $ tokenHeaderValue token) (OSSBucketInfo name Temporary) manager baseURL
+                                  liftIO $ putStrLn "Bucket created..."
+                                  liftIO $ BL.writeFile path $ encode bkt
+                                  return bkt
+
+uploadFile :: OSSBucketInfo -> OxygenClientToken -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectInfo
+uploadFile bInfo token fileToUpload manager baseURL = do
+   liftIO . putStrLn $ "Start uploading " ++ takeFileName fileToUpload
+   ossUploadFile token (bucketKey bInfo) fileToUpload manager baseURL

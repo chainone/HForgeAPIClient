@@ -9,6 +9,7 @@ module ViewDataApi
    , OxygenClientToken(..)
    , OSSObjectPolicy(..)
    , OSSBucketInfo(..)
+   , OSSObjectInfo(..)
    , getServerAccessToken
    , createOSSBucket
    , tokenHeaderValue
@@ -113,7 +114,6 @@ type OSSUpload = "oss" :> "v2" :> "buckets" :> Capture "bucketKey" String :> "ob
 type RegisterViewingService = "viewingservice" :> "v1" :> "register" :> Header "Authorization" String :> ReqBody '[JSON] OSSBucketInfo :> Post '[JSON] OSSBucketInfo
 type CheckViewingServiceStatus = "viewingservice" :> "v1" :> Capture "base64ObjectURN" String :> "status" :> Header "Authorization" String :> GetNoContent '[JSON] NoContent
 type GetViewingServiceObjectThumbnail = "viewingservice" :> "v1" :> "thumbnails" :> Header "Authorization" String :> Get '[OctetStream] BL.ByteString
-
 
 type ViewDataAPI = OxygenAuth :<|> OSSCreateBucket :<|> OSSUpload
 
