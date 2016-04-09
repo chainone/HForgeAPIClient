@@ -3,7 +3,10 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module ViewDataApi.ClientConfigration where
+module ViewDataApi.ClientConfigration
+   (
+      getAccessToken
+   )where
 
 import ViewDataApi
 
@@ -77,15 +80,15 @@ readAccessToken path = do
                      fresh <- isAccessTokenFileFresh path
                      if fresh then return $ Just t
                               else return Nothing
+                 Nothing -> return Nothing
 
-
-getAccessToken :: FilePath -> FilePath -> Manager -> BaseUrl -> IO (Either ServantError OxygenClientToken)
-getAccessToken configPath tokenFilePath manager baseURL = runExceptT $ do
+getAccessToken :: FilePath -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO OxygenClientToken
+getAccessToken configPath tokenFilePath manager baseURL = do
    clientInfo <- liftIO $ getClientInfo configPath
    token <- liftIO $ readAccessToken tokenFilePath
    case token of Just t -> return t
                  Nothing -> do
                      liftIO $ putStrLn "Fetching token..."
-                     st <- getToken (clientOxygenInfo clientInfo) manager baseURL
+                     st <- getServerAccessToken (clientOxygenInfo clientInfo) manager baseURL
                      liftIO . putStrLn $ "Token is " ++ access_token st
                      return st

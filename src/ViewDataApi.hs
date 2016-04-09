@@ -9,7 +9,7 @@ module ViewDataApi
    , OxygenClientToken(..)
    , OSSObjectPolicy(..)
    , OSSBucketInfo(..)
-   , getToken
+   , getServerAccessToken
    , createOSSBucket
    , tokenHeaderValue
    , ossUploadFile
@@ -119,7 +119,7 @@ type ViewDataAPI = OxygenAuth :<|> OSSCreateBucket :<|> OSSUpload
 viewDataAPI :: Proxy ViewDataAPI
 viewDataAPI = Proxy
 
-getToken ::  OxygenClientInfo -> Manager -> BaseUrl -> ExceptT ServantError IO OxygenClientToken
+getServerAccessToken ::  OxygenClientInfo -> Manager -> BaseUrl -> ExceptT ServantError IO OxygenClientToken
 createOSSBucket ::  Maybe String -> OSSBucketInfo -> Manager -> BaseUrl -> ExceptT ServantError IO OSSBucketInfo
 ossUpload :: String -> String -> Maybe String -> BL.ByteString -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectInfo
 
@@ -128,4 +128,4 @@ ossUploadFile token bucketKey filePath manager url = do
    filecontent <- liftIO . BL.readFile $ filePath
    ossUpload bucketKey (takeFileName filePath) (Just $ tokenHeaderValue token) filecontent  manager url
 
-getToken :<|> createOSSBucket :<|> ossUpload = client viewDataAPI
+getServerAccessToken :<|> createOSSBucket :<|> ossUpload = client viewDataAPI
