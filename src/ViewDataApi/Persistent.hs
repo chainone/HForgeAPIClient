@@ -10,14 +10,15 @@ module ViewDataApi.Persistent
    ,  insertOrCreateOSSObjectModel
    )where
 
+import ViewDataApi.CustomPersistentTypes
+
 import Control.Monad.IO.Class  (liftIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Resource (ResourceT)
+
 import Database.Persist
 import Database.Persist.Sqlite (runSqlite, runMigration, SqlPersistT)
-import Database.Persist.TH (mkPersist, mkMigrate, persistLowerCase,
-       share, sqlSettings)
-
+import Database.Persist.TH (mkPersist, mkMigrate, persistLowerCase, share, sqlSettings, derivePersistField)
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 OSSObjectModel
@@ -27,8 +28,12 @@ OSSObjectModel
    objectSize Int
    objectLocation String
    UniqueObjectId objectId
-   deriving Eq Show
+   conversionStatus ModelConversionStatus default = NotRegistered
+   deriving Eq
 |]
+
+instance Show OSSObjectModel where
+   show model = "[" ++ (show . oSSObjectModelConversionStatus) model ++  "] " ++ oSSObjectModelBucketKey model ++ " " ++ oSSObjectModelObjectId model  ++ " " ++ show (fromIntegral (oSSObjectModelObjectSize model) / (1024.0 *1024.0)) ++ " MB"
 
 
 insertOrCreateOSSObjectModel :: OSSObjectModel -> SqlPersistT (NoLoggingT (ResourceT IO)) ()

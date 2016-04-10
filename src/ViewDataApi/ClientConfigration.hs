@@ -11,6 +11,7 @@ module ViewDataApi.ClientConfigration
 
 import ViewDataApi
 import ViewDataApi.Persistent
+import ViewDataApi.CustomPersistentTypes
 
 import Servant.Client
 
@@ -35,7 +36,6 @@ import GHC.Generics
 
 import Database.Persist
 import Database.Persist.Sqlite (runSqlite, runMigration)
-
 
 readJSONFromFile :: (FromJSON a) =>  FilePath -> IO (Maybe a)
 readJSONFromFile path = do
@@ -108,4 +108,4 @@ uploadFile dbFilePath bInfo token fileToUpload manager baseURL = do
    return objectModel
 
 fromServerOSSObject :: OSSObjectInfo -> OSSObjectModel
-fromServerOSSObject info = OSSObjectModel (ossBucketKey info) (ossObjectId info) (ossObjectKey info) (ossObjectSize info) (ossObjectLocation info)
+fromServerOSSObject info = OSSObjectModel (ossBucketKey info) (ossObjectId info) (ossObjectKey info) (ossObjectSize info) (ossObjectLocation info) NotRegistered
