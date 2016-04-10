@@ -28,7 +28,6 @@ import System.Directory
 import System.IO.Unsafe
 import System.Environment
 
-
 baseDirectory = unsafePerformIO getHomeDirectory
 oxygenClientInfoFilePath = baseDirectory </> ".hforge.config"
 accessTokenFilePath = baseDirectory </> ".hforge.token"
@@ -53,6 +52,7 @@ runCommand (sub:xs) =
       case sub of "help" -> putStrLn "This is help info"
                   "upload" -> if null xs then putStrLn "No file to upload, please specify the file path after subcommand \"upload \""
                                          else print =<< runExceptT (doUpload $ head xs)
+                  "list" -> showAllOSSObjectModels dbFilePath
                   _ -> putStrLn "Unknown sub command"
 
 main :: IO ()
