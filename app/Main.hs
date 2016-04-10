@@ -3,6 +3,7 @@
 module Main where
 
 import ViewDataApi
+import ViewDataApi.Persistent
 import ViewDataApi.ClientConfigration
 
 import Control.Applicative
@@ -28,23 +29,23 @@ import System.IO.Unsafe
 import System.Environment
 
 
-
 baseDirectory = unsafePerformIO getHomeDirectory
 oxygenClientInfoFilePath = baseDirectory </> ".hforge.config"
 accessTokenFilePath = baseDirectory </> ".hforge.token"
 bucketFilePath = baseDirectory </> ".hforge.bucket"
+dbFilePath = baseDirectory </> ".hforge.sqlite"
 
 baseURL = BaseUrl Https "developer.api.autodesk.com" 443 ""
 networkManager = unsafePerformIO $ newManager tlsManagerSettings
 
 
-doUpload :: FilePath ->  ExceptT ServantError IO OSSObjectInfo
+doUpload :: FilePath ->  ExceptT ServantError IO OSSObjectModel
 doUpload path = do
       info <- liftIO $ getOxygenClientInfo oxygenClientInfoFilePath
       token <- getAccessToken info accessTokenFilePath networkManager baseURL
       liftIO . print $ token
       bucket <- getBucketInfo token bucketFilePath networkManager baseURL
-      uploadFile bucket token path networkManager baseURL
+      uploadFile dbFilePath bucket token path networkManager baseURL
 
 
 runCommand :: [String] -> IO ()

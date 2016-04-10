@@ -10,6 +10,7 @@ module ViewDataApi.ClientConfigration
    )where
 
 import ViewDataApi
+import ViewDataApi.Persistent
 
 import Servant.Client
 
@@ -31,6 +32,10 @@ import System.Directory
 
 import Network.HTTP.Client (Manager)
 import GHC.Generics
+
+import Database.Persist
+import Database.Persist.Sqlite (runSqlite, runMigration)
+
 
 readJSONFromFile :: (FromJSON a) =>  FilePath -> IO (Maybe a)
 readJSONFromFile path = do
@@ -56,7 +61,7 @@ getOxygenClientInfo path = do
                   return cfg
 
 isAccessTokenFileFresh :: FilePath -> IO Bool
-isAccessTokenFileFresh path = (< 3600.0) <$> (diffUTCTime <$> getCurrentTime <*> getModificationTime path)
+isAccessTokenFileFresh path = (< 1200.0) <$> (diffUTCTime <$> getCurrentTime <*> getModificationTime path)
 
 readAccessToken :: FilePath -> IO (Maybe OxygenClientToken)
 readAccessToken path = do
@@ -92,7 +97,15 @@ getBucketInfo token path manager baseURL = do
                                   liftIO $ BL.writeFile path $ encode bkt
                                   return bkt
 
-uploadFile :: OSSBucketInfo -> OxygenClientToken -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectInfo
-uploadFile bInfo token fileToUpload manager baseURL = do
+uploadFile :: FilePath -> OSSBucketInfo -> OxygenClientToken -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectModel
+uploadFile dbFilePath bInfo token fileToUpload manager baseURL = do
    liftIO . putStrLn $ "Start uploading " ++ takeFileName fileToUpload
-   ossUploadFile token (bucketKey bInfo) fileToUpload manager baseURL
+   object <- ossUploadFile token (bucketKey bInfo) fileToUpload manager baseURL
+   let objectModel = fromServerOSSObject object
+   runSqlite (T.pack dbFilePath) $ do
+      runMigration migrateAll
+      insert objectModel
+   return objectModel
+
+fromServerOSSObject :: OSSObjectInfo -> OSSObjectModel
+fromServerOSSObject info = OSSObjectModel (ossBucketKey info) (ossObjectId info) (ossObjectKey info) (ossObjectSize info) (ossObjectLocation info)

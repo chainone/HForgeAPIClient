@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     ViewDataApi
                      , ViewDataApi.ClientConfigration
+                     , ViewDataApi.Persistent
   build-depends:       base >= 4.7 && < 5
                      , mtl
                      , bytestring
@@ -29,6 +30,9 @@ library
                      , http-client
                      , text
                      , time
+                     , persistent
+                     , persistent-template
+                     , persistent-sqlite
   default-language:    Haskell2010
 
 executable HForgeAPIClient-exe
