@@ -58,4 +58,5 @@ insertOrCreateOSSObjectModel obj = do
 showAllOSSObjectModels :: FilePath -> IO ()
 showAllOSSObjectModels path = runSqlite (T.pack path) $  do
    models <- selectList [] [] :: SqlPersistT (NoLoggingT (ResourceT IO)) [Entity OSSObjectModel]
-   liftIO $ mapM_ (print . entityVal) models
+   let s = map (\(n, m) ->  "#" ++ show n ++ ": " ++ (show . entityVal) m) $ zip [1..] models
+   liftIO $ mapM_ putStrLn s
