@@ -1,12 +1,9 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module ViewDataApi.ClientConfigration
-   (
-      ClientInfoConfig(..)
-   ,  getAccessToken
+   (  getAccessToken
    ,  getOxygenClientInfo
    ,  getBucketInfo
    ,  uploadFile
@@ -34,14 +31,6 @@ import System.Directory
 
 import Network.HTTP.Client (Manager)
 import GHC.Generics
-
-data ClientInfoConfig = ClientInfoConfig{
-      clientOxygenInfo :: OxygenClientInfo
-   ,  clientOSSBucketInfo :: OSSBucketInfo
-}deriving(Eq, Show, Generic)
-
-instance J.FromJSON ClientInfoConfig
-instance J.ToJSON ClientInfoConfig
 
 readJSONFromFile :: (FromJSON a) =>  FilePath -> IO (Maybe a)
 readJSONFromFile path = do
