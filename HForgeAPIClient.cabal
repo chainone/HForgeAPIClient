@@ -33,6 +33,8 @@ library
                      , persistent
                      , persistent-template
                      , persistent-sqlite
+                     , monad-logger
+                     , resourcet
   default-language:    Haskell2010
 
 executable HForgeAPIClient-exe

@@ -2,15 +2,19 @@
 {-# LANGUAGE OverloadedStrings, GADTs, FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
 
+
 module ViewDataApi.Persistent
    (
       OSSObjectModel(..)
    ,  migrateAll
+   ,  insertOrCreateOSSObjectModel
    )where
 
 import Control.Monad.IO.Class  (liftIO)
+import Control.Monad.Logger (NoLoggingT)
+import Control.Monad.Trans.Resource (ResourceT)
 import Database.Persist
-import Database.Persist.Sqlite (runSqlite, runMigration)
+import Database.Persist.Sqlite (runSqlite, runMigration, SqlPersistT)
 import Database.Persist.TH (mkPersist, mkMigrate, persistLowerCase,
        share, sqlSettings)
 
@@ -22,25 +26,15 @@ OSSObjectModel
    objectKey String
    objectSize Int
    objectLocation String
+   UniqueObjectId objectId
    deriving Eq Show
 |]
 
 
--- main :: IO ()
--- main = runSqlite "xxx.sqlite" $ do
---     runMigration migrateAll
---
---     johnId <- insert $ Person "John Doe" $ Just 35
---     janeId <- insert $ Person "Jane Doe" Nothing
---
---     _ <- insert $ BlogPost "My fr1st p0st" johnId
---     _ <- insert $ BlogPost "One more for good measure" johnId
---
---     oneJohnPost <- selectList [BlogPostAuthorId ==. johnId] [LimitTo 1]
---     liftIO $ print (oneJohnPost :: [Entity BlogPost])
---
---     john <- get johnId
---     liftIO $ print (john :: Maybe Person)
-
-    -- delete janeId
-    -- deleteWhere [BlogPostAuthorId ==. johnId]
+insertOrCreateOSSObjectModel :: OSSObjectModel -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+insertOrCreateOSSObjectModel obj = do
+   l <- getBy $ UniqueObjectId $ oSSObjectModelObjectId obj
+   case l of Just (Entity ossObjectModelId ossObjectModel) -> replace ossObjectModelId obj
+             Nothing -> do
+                insert obj
+                return ()

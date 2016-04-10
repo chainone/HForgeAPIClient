@@ -102,9 +102,9 @@ uploadFile dbFilePath bInfo token fileToUpload manager baseURL = do
    liftIO . putStrLn $ "Start uploading " ++ takeFileName fileToUpload
    object <- ossUploadFile token (bucketKey bInfo) fileToUpload manager baseURL
    let objectModel = fromServerOSSObject object
-   runSqlite (T.pack dbFilePath) $ do
+   liftIO . runSqlite (T.pack dbFilePath) $ do
       runMigration migrateAll
-      insert objectModel
+      insertOrCreateOSSObjectModel objectModel
    return objectModel
 
 fromServerOSSObject :: OSSObjectInfo -> OSSObjectModel
