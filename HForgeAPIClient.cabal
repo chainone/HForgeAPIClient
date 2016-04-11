@@ -36,6 +36,8 @@ library
                      , persistent-sqlite
                      , monad-logger
                      , resourcet
+                     , process
+                     , HTTP
   default-language:    Haskell2010
 
 executable HForgeAPIClient-exe

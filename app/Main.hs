@@ -47,12 +47,22 @@ doUpload path = do
       uploadFile dbFilePath bucket token path networkManager baseURL
 
 
+doDownload :: String -> FilePath ->  ExceptT ServantError IO ()
+doDownload filename dir = do
+   info <- liftIO $ getOxygenClientInfo oxygenClientInfoFilePath
+   token <- getAccessToken info accessTokenFilePath networkManager baseURL
+   liftIO . print $ token
+   bucket <- getBucketInfo token bucketFilePath networkManager baseURL
+   liftIO $ downloadFileCURL bucket token (dir </> filename)
+
 runCommand :: [String] -> IO ()
 runCommand (sub:xs) =
       case sub of "help" -> putStrLn "This is help info"
                   "upload" -> if null xs then putStrLn "No file to upload, please specify the file path after subcommand \"upload \""
                                          else print =<< runExceptT (doUpload $ head xs)
                   "list" -> showAllOSSObjectModels dbFilePath
+                  "download" -> if length xs < 2 then putStrLn "No file to download, please specify the file name and the directory that you want to put the file in after subcommand \"download \""
+                                         else print =<< runExceptT (doDownload (head xs) (xs !! 1) )
                   _ -> putStrLn "Unknown sub command"
 
 main :: IO ()

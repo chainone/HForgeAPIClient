@@ -7,6 +7,7 @@ module ViewDataApi.ClientConfigration
    ,  getOxygenClientInfo
    ,  getBucketInfo
    ,  uploadFile
+   ,  downloadFileCURL
    )where
 
 import ViewDataApi
@@ -30,8 +31,10 @@ import qualified Data.Text.IO as T
 
 import System.FilePath.Posix
 import System.Directory
+import System.Process
 
 import Network.HTTP.Client (Manager)
+import Network.HTTP (urlEncode)
 import GHC.Generics
 
 import Database.Persist
@@ -109,3 +112,19 @@ uploadFile dbFilePath bInfo token fileToUpload manager baseURL = do
 
 fromServerOSSObject :: OSSObjectInfo -> OSSObjectModel
 fromServerOSSObject info = OSSObjectModel (ossBucketKey info) (ossObjectId info) (ossObjectKey info) (ossObjectSize info) (ossObjectLocation info) NotRegistered
+
+wrapperString :: String -> String
+wrapperString s = "\"" ++ s ++ "\""
+
+ossDownloadCURLCmd :: OSSBucketInfo -> OxygenClientToken -> FilePath -> String
+ossDownloadCURLCmd bucket clientToken pathToSave = "curl --header \"Authorization:" ++ tokenHeaderValue clientToken
+                                                   ++ "\" -H \"Content-Type:application/octet-stream\" -X GET https://developer.api.autodesk.com/oss/v2/buckets/"
+                                                   ++ bucketKey bucket ++ "/objects/" ++ (urlEncode . takeFileName) pathToSave
+                                                   ++ " -o " ++ wrapperString pathToSave
+
+downloadFileCURL :: OSSBucketInfo -> OxygenClientToken -> FilePath -> IO ()
+downloadFileCURL bucket token path = do
+   let cmd = ossDownloadCURLCmd bucket token path
+   print cmd
+   callCommand cmd
+   -- callCommand $ ossDownloadCURLCmd bucket token path
