@@ -53,6 +53,7 @@ executable HForgeAPIClient-exe
                      , aeson
                      , text
                      , transformers
+                     , servant
                      , servant-client
                      , http-client
                      , http-client-tls

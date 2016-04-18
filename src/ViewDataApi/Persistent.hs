@@ -9,6 +9,8 @@ module ViewDataApi.Persistent
    ,  migrateAll
    ,  insertOrCreateOSSObjectModel
    ,  showAllOSSObjectModels
+   ,  getAllOSSObjectModels
+   ,  getStoredOSSObjectModel
    )where
 
 import ViewDataApi.CustomPersistentTypes
@@ -58,5 +60,18 @@ insertOrCreateOSSObjectModel obj = do
 showAllOSSObjectModels :: FilePath -> IO ()
 showAllOSSObjectModels path = runSqlite (T.pack path) $  do
    models <- selectList [] [] :: SqlPersistT (NoLoggingT (ResourceT IO)) [Entity OSSObjectModel]
-   let s = map (\(n, m) ->  "#" ++ show n ++ ": " ++ (show . entityVal) m) $ zip [1..] (reverse models)
+   let s = map (\(n, m) ->  "#" ++ show n ++ ": " ++ (show . entityVal) m) $ zip [0..] (reverse models)
    liftIO $ mapM_ putStrLn s
+
+
+getAllOSSObjectModels :: FilePath -> IO [Entity OSSObjectModel]
+getAllOSSObjectModels path = runSqlite (T.pack path) $ do
+   selectList [] [] :: SqlPersistT (NoLoggingT (ResourceT IO)) [Entity OSSObjectModel]
+
+checkAllStoredOSSObjectRegisterationStatus :: FilePath -> IO [Entity OSSObjectModel]
+checkAllStoredOSSObjectRegisterationStatus path = do
+      models <- getAllOSSObjectModels path
+      return $ filter (\e -> oSSObjectModelConversionStatus (entityVal e) ==  Registered ) models
+
+getStoredOSSObjectModel :: FilePath -> Int -> IO (Entity OSSObjectModel)
+getStoredOSSObjectModel path index = ((!!index) . reverse) <$> getAllOSSObjectModels path

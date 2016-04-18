@@ -14,6 +14,9 @@ module ViewDataApi
    , createOSSBucket
    , tokenHeaderValue
    , ossUploadFile
+   , registerViewingService
+   , checkViewingServiceStatus
+   , downloadViewingServiceObjectThumbnail
    ) where
 
 import Control.Applicative as A
@@ -157,11 +160,11 @@ toBase64 = BLS.unpack . encode . BLS.pack
 toBase64OSSObjectURNJSON :: String -> Base64OSSObjectURNJSON
 toBase64OSSObjectURNJSON  = Base64OSSObjectURNJSON . toBase64
 
-registerViewingService :: String -> String -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
-registerViewingService token ossURN  = registerViewingServiceRaw (Just token) $ toBase64OSSObjectURNJSON ossURN
+registerViewingService :: OxygenClientToken -> String -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
+registerViewingService token ossURN  = registerViewingServiceRaw (Just $ tokenHeaderValue token) $ toBase64OSSObjectURNJSON ossURN
 
-checkViewingServiceStatus :: String -> String -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
-checkViewingServiceStatus token ossURN = checkViewingServiceStatusRaw (toBase64 ossURN) (Just token)
+checkViewingServiceStatus :: OxygenClientToken -> String -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
+checkViewingServiceStatus token ossURN = checkViewingServiceStatusRaw (toBase64 ossURN) (Just $ tokenHeaderValue token)
 
-downloadViewingServiceObjectThumbnail :: String -> String -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO ()
-downloadViewingServiceObjectThumbnail token ossURN path manager url = getViewingServiceObjectThumbnailRaw (toBase64 ossURN) (Just token) manager url >>= liftIO . BL.writeFile path
+downloadViewingServiceObjectThumbnail :: OxygenClientToken -> String -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO ()
+downloadViewingServiceObjectThumbnail token ossURN path manager url = getViewingServiceObjectThumbnailRaw (toBase64 ossURN) (Just $ tokenHeaderValue token) manager url >>= liftIO . BL.writeFile path

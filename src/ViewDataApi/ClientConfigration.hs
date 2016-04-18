@@ -8,6 +8,7 @@ module ViewDataApi.ClientConfigration
    ,  getBucketInfo
    ,  uploadFile
    ,  downloadFileCURL
+   ,  registerStoredOSSObjectModel
    )where
 
 import ViewDataApi
@@ -39,6 +40,8 @@ import GHC.Generics
 
 import Database.Persist
 import Database.Persist.Sqlite (runSqlite, runMigration)
+
+import Servant.API.ContentTypes
 
 readJSONFromFile :: (FromJSON a) =>  FilePath -> IO (Maybe a)
 readJSONFromFile path = do
@@ -124,3 +127,12 @@ ossDownloadCURLCmd bucket clientToken pathToSave = "curl --header \"Authorizatio
 
 downloadFileCURL :: OSSBucketInfo -> OxygenClientToken -> FilePath -> IO ()
 downloadFileCURL bucket token path = callCommand $ ossDownloadCURLCmd bucket token path
+
+
+
+
+registerStoredOSSObjectModel :: FilePath -> Int -> OxygenClientToken -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
+registerStoredOSSObjectModel path index token manager url = do
+      model <- liftIO $ entityVal <$> getStoredOSSObjectModel path index
+      liftIO . putStrLn $ "Registering object " ++ oSSObjectModelObjectKey model
+      registerViewingService token (oSSObjectModelObjectId model) manager url

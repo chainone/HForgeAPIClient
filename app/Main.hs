@@ -12,6 +12,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 
 import Servant.Client
+import Servant.API
 
 import Network.HTTP.Client (newManager, Manager)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
@@ -55,6 +56,17 @@ doDownload filename dir = do
    bucket <- getBucketInfo token bucketFilePath networkManager baseURL
    liftIO $ downloadFileCURL bucket token (dir </> filename)
 
+
+doGetToken :: ExceptT ServantError IO OxygenClientToken
+doGetToken = do
+   info <- liftIO $ getOxygenClientInfo oxygenClientInfoFilePath
+   getAccessToken info accessTokenFilePath networkManager baseURL
+
+doRegister :: Int -> ExceptT ServantError IO NoContent
+doRegister index = do
+   token <- doGetToken
+   registerStoredOSSObjectModel dbFilePath index token networkManager baseURL
+
 runCommand :: [String] -> IO ()
 runCommand (sub:xs) =
       case sub of "help" -> putStrLn "This is help info"
@@ -63,6 +75,9 @@ runCommand (sub:xs) =
                   "list" -> showAllOSSObjectModels dbFilePath
                   "download" -> if length xs < 2 then putStrLn "No file to download, please specify the file name and the directory that you want to put the file in after subcommand \"download \""
                                          else print =<< runExceptT (doDownload (head xs) (xs !! 1) )
+                  "register" -> runExceptT (doRegister (read (head xs))) >>= print
+                  "thumbnail" -> return ()
+                  "status" -> return ()
                   _ -> putStrLn "Unknown sub command"
 
 main :: IO ()
