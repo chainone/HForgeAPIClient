@@ -25,6 +25,10 @@ import Data.Aeson.TH
 import Data.Monoid
 import Data.Proxy
 import Data.Text (Text)
+import Data.ByteString.Base64 (encode)
+import qualified Data.ByteString.Char8 as BLS
+
+
 import GHC.Generics
 import Servant.API
 import Servant.Client
@@ -33,6 +37,7 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString as BS
 import System.FilePath.Posix
 import System.Directory
+
 
 import qualified Data.Text    as T
 import qualified Data.Text.IO as T
@@ -104,6 +109,14 @@ ossObjectInfoFieldMapping s = s
 instance J.FromJSON OSSObjectInfo where
   parseJSON = J.genericParseJSON (J.defaultOptions { fieldLabelModifier = ossObjectInfoFieldMapping })
 
+
+data Base64OSSObjectURNJSON = Base64OSSObjectURNJSON{
+   urn :: String
+}deriving (Eq, Show, Generic)
+instance J.ToJSON Base64OSSObjectURNJSON
+
+
+
 ---------------------------
 -- API Declaration
 ---------------------------
@@ -111,11 +124,13 @@ type OxygenAuth = "authentication" :> "v1" :> "authenticate" :> ReqBody '[FormUr
 type OSSCreateBucket = "oss" :> "v2" :> "buckets" :> Header "Authorization" String :> ReqBody '[JSON] OSSBucketInfo :> Post '[JSON] OSSBucketInfo
 type OSSUpload = "oss" :> "v2" :> "buckets" :> Capture "bucketKey" String :> "objects" :> Capture "objectName" String :> Header "Authorization" String :> ReqBody '[OctetStream] BL.ByteString :> Put '[JSON] OSSObjectInfo
 
-type RegisterViewingService = "viewingservice" :> "v1" :> "register" :> Header "Authorization" String :> ReqBody '[JSON] OSSBucketInfo :> Post '[JSON] OSSBucketInfo
+type RegisterViewingService = "viewingservice" :> "v1" :> "register" :> Header "Authorization" String :> ReqBody '[JSON] Base64OSSObjectURNJSON :> PostNoContent '[JSON] NoContent
 type CheckViewingServiceStatus = "viewingservice" :> "v1" :> Capture "base64ObjectURN" String :> "status" :> Header "Authorization" String :> GetNoContent '[JSON] NoContent
-type GetViewingServiceObjectThumbnail = "viewingservice" :> "v1" :> "thumbnails" :> Header "Authorization" String :> Get '[OctetStream] BL.ByteString
+type GetViewingServiceObjectThumbnail = "viewingservice" :> "v1" :> "thumbnails" :> Capture "base64ObjectURN" String :> Header "Authorization" String :> Get '[OctetStream] BL.ByteString
 
-type ViewDataAPI = OxygenAuth :<|> OSSCreateBucket :<|> OSSUpload
+type ViewDataAPI = OxygenAuth :<|> OSSCreateBucket :<|> OSSUpload :<|> RegisterViewingService
+                              :<|> CheckViewingServiceStatus :<|> GetViewingServiceObjectThumbnail
+
 
 viewDataAPI :: Proxy ViewDataAPI
 viewDataAPI = Proxy
@@ -123,10 +138,30 @@ viewDataAPI = Proxy
 getServerAccessToken ::  OxygenClientInfo -> Manager -> BaseUrl -> ExceptT ServantError IO OxygenClientToken
 createOSSBucket ::  Maybe String -> OSSBucketInfo -> Manager -> BaseUrl -> ExceptT ServantError IO OSSBucketInfo
 ossUpload :: String -> String -> Maybe String -> BL.ByteString -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectInfo
+registerViewingServiceRaw ::  Maybe String -> Base64OSSObjectURNJSON -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
+checkViewingServiceStatusRaw :: String -> Maybe String -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
+getViewingServiceObjectThumbnailRaw :: String -> Maybe String -> Manager -> BaseUrl -> ExceptT ServantError IO BL.ByteString
+
+getServerAccessToken :<|> createOSSBucket :<|> ossUpload :<|> registerViewingServiceRaw
+                     :<|> checkViewingServiceStatusRaw  :<|> getViewingServiceObjectThumbnailRaw = client viewDataAPI
 
 ossUploadFile :: OxygenClientToken -> String -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectInfo
 ossUploadFile token bucketKey filePath manager url = do
    filecontent <- liftIO . BL.readFile $ filePath
    ossUpload bucketKey (takeFileName filePath) (Just $ tokenHeaderValue token) filecontent  manager url
 
-getServerAccessToken :<|> createOSSBucket :<|> ossUpload = client viewDataAPI
+
+toBase64 :: String -> String
+toBase64 = BLS.unpack . encode . BLS.pack
+
+toBase64OSSObjectURNJSON :: String -> Base64OSSObjectURNJSON
+toBase64OSSObjectURNJSON  = Base64OSSObjectURNJSON . toBase64
+
+registerViewingService :: String -> String -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
+registerViewingService token ossURN  = registerViewingServiceRaw (Just token) $ toBase64OSSObjectURNJSON ossURN
+
+checkViewingServiceStatus :: String -> String -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
+checkViewingServiceStatus token ossURN = checkViewingServiceStatusRaw (toBase64 ossURN) (Just token)
+
+downloadViewingServiceObjectThumbnail :: String -> String -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO ()
+downloadViewingServiceObjectThumbnail token ossURN path manager url = getViewingServiceObjectThumbnailRaw (toBase64 ossURN) (Just token) manager url >>= liftIO . BL.writeFile path
