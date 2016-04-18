@@ -67,6 +67,11 @@ doRegister index = do
    token <- doGetToken
    registerStoredOSSObjectModel dbFilePath index token networkManager baseURL
 
+doCheckStatus :: Int -> ExceptT ServantError IO OSSObjectInfo
+doCheckStatus index = do
+   token <- doGetToken
+   checkStoredOSSObjectModelStatus dbFilePath index token networkManager baseURL
+
 runCommand :: [String] -> IO ()
 runCommand (sub:xs) =
       case sub of "help" -> putStrLn "This is help info"
@@ -77,7 +82,7 @@ runCommand (sub:xs) =
                                          else print =<< runExceptT (doDownload (head xs) (xs !! 1) )
                   "register" -> runExceptT (doRegister (read (head xs))) >>= print
                   "thumbnail" -> return ()
-                  "status" -> return ()
+                  "status" -> runExceptT (doCheckStatus (read (head xs))) >>= print
                   _ -> putStrLn "Unknown sub command"
 
 main :: IO ()

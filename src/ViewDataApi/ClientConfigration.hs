@@ -9,6 +9,7 @@ module ViewDataApi.ClientConfigration
    ,  uploadFile
    ,  downloadFileCURL
    ,  registerStoredOSSObjectModel
+   ,  checkStoredOSSObjectModelStatus
    )where
 
 import ViewDataApi
@@ -136,3 +137,9 @@ registerStoredOSSObjectModel path index token manager url = do
       model <- liftIO $ entityVal <$> getStoredOSSObjectModel path index
       liftIO . putStrLn $ "Registering object " ++ oSSObjectModelObjectKey model
       registerViewingService token (oSSObjectModelObjectId model) manager url
+
+checkStoredOSSObjectModelStatus :: FilePath -> Int -> OxygenClientToken -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectInfo
+checkStoredOSSObjectModelStatus path index token manager url = do
+      model <- liftIO $ entityVal <$> getStoredOSSObjectModel path index
+      liftIO . putStrLn $ "Checking status for object " ++ oSSObjectModelObjectKey model
+      checkViewingServiceStatus token (oSSObjectModelObjectId model) manager url
