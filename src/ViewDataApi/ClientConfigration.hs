@@ -10,6 +10,7 @@ module ViewDataApi.ClientConfigration
    ,  downloadFileCURL
    ,  registerStoredOSSObjectModel
    ,  checkStoredOSSObjectModelStatus
+   ,  downloadStoredOSSObjectModel
    )where
 
 import ViewDataApi
@@ -129,7 +130,11 @@ ossDownloadCURLCmd bucket clientToken pathToSave = "curl --header \"Authorizatio
 downloadFileCURL :: OSSBucketInfo -> OxygenClientToken -> FilePath -> IO ()
 downloadFileCURL bucket token path = callCommand $ ossDownloadCURLCmd bucket token path
 
-
+downloadStoredOSSObjectModel :: FilePath -> Int -> FilePath -> OSSBucketInfo -> OxygenClientToken -> Manager -> BaseUrl -> ExceptT ServantError IO ()
+downloadStoredOSSObjectModel path index folderPath bucket token manager url = do
+      model <- liftIO $ entityVal <$> getStoredOSSObjectModel path index
+      liftIO . putStrLn $ "Downloading object " ++ oSSObjectModelObjectKey model
+      liftIO $ downloadFileCURL bucket token (folderPath </> oSSObjectModelObjectKey model)
 
 
 registerStoredOSSObjectModel :: FilePath -> Int -> OxygenClientToken -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent

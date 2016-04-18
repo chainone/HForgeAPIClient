@@ -48,14 +48,11 @@ doUpload path = do
       uploadFile dbFilePath bucket token path networkManager baseURL
 
 
-doDownload :: String -> FilePath ->  ExceptT ServantError IO ()
-doDownload filename dir = do
-   info <- liftIO $ getOxygenClientInfo oxygenClientInfoFilePath
-   token <- getAccessToken info accessTokenFilePath networkManager baseURL
-   liftIO . print $ token
+doDownload :: Int -> FilePath ->  ExceptT ServantError IO ()
+doDownload index dir = do
+   token <- doGetToken
    bucket <- getBucketInfo token bucketFilePath networkManager baseURL
-   liftIO $ downloadFileCURL bucket token (dir </> filename)
-
+   downloadStoredOSSObjectModel dbFilePath index dir bucket token networkManager baseURL
 
 doGetToken :: ExceptT ServantError IO OxygenClientToken
 doGetToken = do
@@ -79,7 +76,7 @@ runCommand (sub:xs) =
                                          else print =<< runExceptT (doUpload $ head xs)
                   "list" -> showAllOSSObjectModels dbFilePath
                   "download" -> if length xs < 2 then putStrLn "No file to download, please specify the file name and the directory that you want to put the file in after subcommand \"download \""
-                                         else print =<< runExceptT (doDownload (head xs) (xs !! 1) )
+                                         else print =<< runExceptT (doDownload (read (head xs)) (xs !! 1) )
                   "register" -> runExceptT (doRegister (read (head xs))) >>= print
                   "thumbnail" -> return ()
                   "status" -> runExceptT (doCheckStatus (read (head xs))) >>= print
