@@ -123,8 +123,4 @@ ossDownloadCURLCmd bucket clientToken pathToSave = "curl --header \"Authorizatio
                                                    ++ " -o " ++ wrapperString pathToSave
 
 downloadFileCURL :: OSSBucketInfo -> OxygenClientToken -> FilePath -> IO ()
-downloadFileCURL bucket token path = do
-   let cmd = ossDownloadCURLCmd bucket token path
-   print cmd
-   callCommand cmd
-   -- callCommand $ ossDownloadCURLCmd bucket token path
+downloadFileCURL bucket token path = callCommand $ ossDownloadCURLCmd bucket token path
