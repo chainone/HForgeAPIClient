@@ -147,7 +147,7 @@ type OSSCreateBucket = "oss" :> "v2" :> "buckets" :> Header "Authorization" Stri
 type OSSUpload = "oss" :> "v2" :> "buckets" :> Capture "bucketKey" String :> "objects" :> Capture "objectName" String :> Header "Authorization" String :> ReqBody '[OctetStream] BL.ByteString :> Put '[JSON] OSSObjectInfo
 
 type RegisterViewingService = "viewingservice" :> "v1" :> "register" :> Header "Authorization" String :> ReqBody '[JSON] Base64OSSObjectURNJSON :> PostNoContent '[JSON] NoContent
-type CheckViewingServiceStatus = "viewingservice" :> "v1" :> Capture "base64ObjectURN" String :> "status" :> Header "Authorization" String :> GetNoContent '[JSON] OSSObjectInfo
+type CheckViewingServiceStatus = "viewingservice" :> "v1" :> Capture "base64ObjectURN" String :> "status" :> Header "Authorization" String :> GetNoContent '[JSON] J.Object
 type GetViewingServiceObjectThumbnail = "viewingservice" :> "v1" :> "thumbnails" :> Capture "base64ObjectURN" String :> Header "Authorization" String :> Get '[PNG] BL.ByteString
 
 type ViewDataAPI = OxygenAuth :<|> OSSCreateBucket :<|> OSSUpload :<|> RegisterViewingService
@@ -161,7 +161,7 @@ getServerAccessToken ::  OxygenClientInfo -> Manager -> BaseUrl -> ExceptT Serva
 createOSSBucket ::  Maybe String -> OSSBucketInfo -> Manager -> BaseUrl -> ExceptT ServantError IO OSSBucketInfo
 ossUpload :: String -> String -> Maybe String -> BL.ByteString -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectInfo
 registerViewingServiceRaw ::  Maybe String -> Base64OSSObjectURNJSON -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
-checkViewingServiceStatusRaw :: String -> Maybe String -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectInfo
+checkViewingServiceStatusRaw :: String -> Maybe String -> Manager -> BaseUrl -> ExceptT ServantError IO J.Object
 getViewingServiceObjectThumbnailRaw :: String -> Maybe String -> Manager -> BaseUrl -> ExceptT ServantError IO BL.ByteString
 
 getServerAccessToken :<|> createOSSBucket :<|> ossUpload :<|> registerViewingServiceRaw
@@ -182,7 +182,7 @@ toBase64OSSObjectURNJSON  = Base64OSSObjectURNJSON . toBase64
 registerViewingService :: OxygenClientToken -> String -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
 registerViewingService token ossURN  = registerViewingServiceRaw (Just $ tokenHeaderValue token) $ toBase64OSSObjectURNJSON ossURN
 
-checkViewingServiceStatus :: OxygenClientToken -> String -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectInfo
+checkViewingServiceStatus :: OxygenClientToken -> String -> Manager -> BaseUrl -> ExceptT ServantError IO J.Object
 checkViewingServiceStatus token ossURN = checkViewingServiceStatusRaw (toBase64 ossURN) (Just $ tokenHeaderValue token)
 
 downloadViewingServiceObjectThumbnail :: OxygenClientToken -> String -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO ()

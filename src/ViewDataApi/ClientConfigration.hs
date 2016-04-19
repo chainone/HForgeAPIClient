@@ -28,6 +28,7 @@ import Control.Monad.Trans.Except
 import Data.Time
 import Data.Aeson as J
 import Data.Aeson.TH
+import qualified Data.HashMap.Lazy as HML
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString as BS
 import qualified Data.Text    as T
@@ -89,7 +90,7 @@ getAccessToken info tokenFilePath manager baseURL = do
                      liftIO $ putStrLn "Fetching token..."
                      st <- getServerAccessToken info manager baseURL
                      liftIO $ BL.writeFile tokenFilePath $ encode st
-                     liftIO . putStrLn $ "Token is " ++ access_token st
+                     -- liftIO . putStrLn $ "Token is " ++ access_token st
                      return st
 
 
@@ -142,13 +143,26 @@ registerStoredOSSObjectModel :: FilePath -> Int -> OxygenClientToken -> Manager 
 registerStoredOSSObjectModel path index token manager url = do
       model <- liftIO $ entityVal <$> getStoredOSSObjectModel path index
       liftIO . putStrLn $ "Registering object " ++ oSSObjectModelObjectKey model
-      registerViewingService token (oSSObjectModelObjectId model) manager url
+      n <- registerViewingService token (oSSObjectModelObjectId model) manager url
+      liftIO . runSqlite (T.pack path) $ do
+         runMigration migrateAll
+         updateOSSObjectConversionStatus model Registered
+      liftIO . print $ model { oSSObjectModelConversionStatus = Registered }
+      return n
 
-checkStoredOSSObjectModelStatus :: FilePath -> Int -> OxygenClientToken -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectInfo
+
+-- TODO: Dup code
+checkStoredOSSObjectModelStatus :: FilePath -> Int -> OxygenClientToken -> Manager -> BaseUrl -> ExceptT ServantError IO ModelConversionStatus
 checkStoredOSSObjectModelStatus path index token manager url = do
       model <- liftIO $ entityVal <$> getStoredOSSObjectModel path index
       liftIO . putStrLn $ "Checking status for object " ++ oSSObjectModelObjectKey model
-      checkViewingServiceStatus token (oSSObjectModelObjectId model) manager url
+      c <- getConversionStatus <$> checkViewingServiceStatus token (oSSObjectModelObjectId model) manager url
+      liftIO . runSqlite (T.pack path) $ do
+         runMigration migrateAll
+         updateOSSObjectConversionStatus model c
+      liftIO . print $ model { oSSObjectModelConversionStatus = c }
+      return c
+
 
 downloadStoredOSSObjectModelThumbnail :: FilePath -> Int -> FilePath -> OxygenClientToken -> Manager -> BaseUrl -> ExceptT ServantError IO ()
 downloadStoredOSSObjectModelThumbnail dbPath index dir token manager url = do
@@ -158,3 +172,9 @@ downloadStoredOSSObjectModelThumbnail dbPath index dir token manager url = do
       downloadViewingServiceObjectThumbnail token (oSSObjectModelObjectId model) thumbnailPath  manager url
       liftIO . putStrLn $ "Thumbnail downloaded to " ++  thumbnailPath
       liftIO . callCommand $ "open \"" ++ thumbnailPath ++ "\""
+
+
+getConversionStatus :: J.Object -> ModelConversionStatus
+getConversionStatus o = case HML.lookup "progress" o of Just (String "complete") -> Converted
+                                                        Just _ -> Registered
+                                                        Nothing -> Registered

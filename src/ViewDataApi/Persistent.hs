@@ -8,9 +8,11 @@ module ViewDataApi.Persistent
       OSSObjectModel(..)
    ,  migrateAll
    ,  insertOrCreateOSSObjectModel
+   ,  updateOSSObjectConversionStatus
    ,  showAllOSSObjectModels
    ,  getAllOSSObjectModels
    ,  getStoredOSSObjectModel
+   ,  getStoredOSSObjectModelRaw
    )where
 
 import ViewDataApi.CustomPersistentTypes
@@ -57,6 +59,13 @@ insertOrCreateOSSObjectModel obj = do
                 insert obj
                 return ()
 
+
+updateOSSObjectConversionStatus :: OSSObjectModel -> ModelConversionStatus -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+updateOSSObjectConversionStatus obj status = do
+   l <- getBy $ UniqueObjectId $ oSSObjectModelObjectId obj
+   case l of Just (Entity ossObjectModelId ossObjectModel) -> update ossObjectModelId [OSSObjectModelConversionStatus =. Converted]
+             Nothing -> return ()
+
 showAllOSSObjectModels :: FilePath -> IO ()
 showAllOSSObjectModels path = runSqlite (T.pack path) $  do
    models <- selectList [] [] :: SqlPersistT (NoLoggingT (ResourceT IO)) [Entity OSSObjectModel]
@@ -75,3 +84,6 @@ checkAllStoredOSSObjectRegisterationStatus path = do
 
 getStoredOSSObjectModel :: FilePath -> Int -> IO (Entity OSSObjectModel)
 getStoredOSSObjectModel path index = ((!!index) . reverse) <$> getAllOSSObjectModels path
+
+getStoredOSSObjectModelRaw :: FilePath -> Int -> IO OSSObjectModel
+getStoredOSSObjectModelRaw path index  = entityVal <$> getStoredOSSObjectModel path index

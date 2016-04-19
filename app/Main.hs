@@ -1,10 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
-
+{-# LANGUAGE TemplateHaskell #-}
 module Main where
 
 import ViewDataApi
 import ViewDataApi.Persistent
 import ViewDataApi.ClientConfigration
+import ViewDataApi.CustomPersistentTypes
 
 import Control.Applicative
 import Control.Monad
@@ -20,6 +21,7 @@ import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Data.Maybe
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as BSC
 import qualified Data.Aeson as J
 import qualified Data.Text    as T
 import qualified Data.Text.IO as T
@@ -28,8 +30,19 @@ import System.FilePath.Posix
 import System.Directory
 import System.IO.Unsafe
 import System.Environment
+import System.Process
+import Data.FileEmbed
+import Data.ByteString.Base64 (encode)
+
+toBase64 :: String -> String
+toBase64 = BSC.unpack . encode . BSC.pack
 
 baseDirectory = unsafePerformIO getHomeDirectory
+
+forgeViewingHtmlFile = $(embedFile "forge.viewing.html")
+forgeViewingHtmlFilePath = baseDirectory </> "forge.viewing.html"
+forgeViewingJSConfigFilePath = baseDirectory </>"forge.viewing.config.js"
+
 oxygenClientInfoFilePath = baseDirectory </> ".hforge.config"
 accessTokenFilePath = baseDirectory </> ".hforge.token"
 bucketFilePath = baseDirectory </> ".hforge.bucket"
@@ -64,7 +77,7 @@ doRegister index = do
    token <- doGetToken
    registerStoredOSSObjectModel dbFilePath index token networkManager baseURL
 
-doCheckStatus :: Int -> ExceptT ServantError IO OSSObjectInfo
+doCheckStatus :: Int -> ExceptT ServantError IO ModelConversionStatus
 doCheckStatus index = do
    token <- doGetToken
    checkStoredOSSObjectModelStatus dbFilePath index token networkManager baseURL
@@ -75,9 +88,26 @@ doDownloadThumbnail index dir = do
    token <- doGetToken
    downloadStoredOSSObjectModelThumbnail dbFilePath index dir token networkManager baseURL
 
-runCommand :: [String] -> IO ()
-runCommand (sub:xs) =
-      case sub of "help" -> putStrLn "This is help info"
+
+generateViewingConfigFileString :: OxygenClientToken -> String -> String
+generateViewingConfigFileString token docURN = "var documentURN = 'urn:" ++ docURN ++ "'; var token = \"" ++ access_token token ++ "\";"
+
+generateViewingFiles :: OxygenClientToken -> String -> IO ()
+generateViewingFiles token docURN = do
+      BS.writeFile forgeViewingHtmlFilePath forgeViewingHtmlFile
+      BS.writeFile forgeViewingJSConfigFilePath $ BSC.pack $ generateViewingConfigFileString token docURN
+
+
+doViewModel :: Int -> ExceptT ServantError IO ()
+doViewModel index = do
+      token <- doGetToken
+      model <- liftIO $ getStoredOSSObjectModelRaw dbFilePath index
+      liftIO $ generateViewingFiles token $ (toBase64 . oSSObjectModelObjectId) model
+      liftIO $ callCommand $ "open " ++ forgeViewingHtmlFilePath
+
+runCommander :: [String] -> IO ()
+runCommander (sub:xs) =
+      case sub of "help" -> putStrLn "1. hforge list\n 2 hforge upload file_to_upload\n 3. hforge download 0 ~/\n 4. hforge register 3 5. hforge status 2\n 6. hforge thumbnail 6"
                   "upload" -> if null xs then putStrLn "No file to upload, please specify the file path after subcommand \"upload \""
                                          else print =<< runExceptT (doUpload $ head xs)
                   "list" -> showAllOSSObjectModels dbFilePath
@@ -86,7 +116,8 @@ runCommand (sub:xs) =
                   "register" -> runExceptT (doRegister (read (head xs))) >>= print
                   "thumbnail" -> runExceptT (doDownloadThumbnail (read (head xs)) (xs !! 1) ) >>= print
                   "status" -> runExceptT (doCheckStatus (read (head xs))) >>= print
+                  "view" -> runExceptT (doViewModel (read (head xs))) >>= print
                   _ -> putStrLn "Unknown sub command"
 
 main :: IO ()
-main = getArgs >>= runCommand
+main = getArgs >>= runCommander

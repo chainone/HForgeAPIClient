@@ -21,6 +21,6 @@ import Database.Persist.Sqlite
 import Database.Persist.TH
 
 
-data ModelConversionStatus = NotRegistered | Registered | ConversionFailed | Converted
+data ModelConversionStatus = NotRegistered | Registered | Converted
      deriving (Eq, Show, Generic, Read)
 derivePersistField "ModelConversionStatus"
