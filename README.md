@@ -3,29 +3,31 @@ A Haskell-made client that connects to Autodesk Forge (Data and View) APIs
 
 This commond line tool aims to make developers' life easier to deal with Autodesk Data and View APIs    
 One single comannd line can help you do one of the following things:
-1. Remeber your app id & secret 
+1. Remeber your app id & secret    
 
-~ $ hforge upload ~/Desktop/school.nwd 
-Enter your Autodesk Forge Client Id:
-test
-Enter your Autodesk Forge Client Secret:
-test
+    	~ $ hforge upload ~/Desktop/school.nwd 
+    	Enter your Autodesk Forge Client Id:
+    	test
+    	Enter your Autodesk Forge Client Secret:
+    	test
 
-2. Handle token expircy transparently
-3. List files(models) you have and the status of those models
-  ~ $ hforge list
-#0: [Converted] werty school.nwd 1.52 MB
-#1: [NotRegistered] werty test.html 0.01 MB
-#2: [Converted] werty Eircom Park.nwd 2.91 MB
-#3: [Converted] werty Ice Stadium.nwd 1.89 MB
-#4: [NotRegistered] werty BIM360_Plan_Test_Case.xlsx 0.10 MB
-#5: [Converted] werty Core Data 2015-12-14.pdf 3.27 MB
-#6: [Converted] werty Functional Programming in Swift (2014-12-09).pdf 0.60 MB
-#7: [NotRegistered] werty seafile-1.2.0.apk 1.69 MB
-#8: [Converted] werty guide.pdf 0.28 MB
-#9: [Converted] werty 1.bmp 0.92 MB
-#10: [Converted] werty first.rvt 5.65 MB
-#11: [NotRegistered] werty code.m 0.00 MB
+2. Handle token expircy transparently    
+3. List files(models) you have and the status of those models  
+
+    	~ $ hforge list
+    	#0: [Converted] werty school.nwd 1.52 MB
+    	#1: [NotRegistered] werty test.html 0.01 MB
+    	#2: [Converted] werty Eircom Park.nwd 2.91 MB
+    	#3: [Converted] werty Ice Stadium.nwd 1.89 MB
+    	#4: [NotRegistered] werty BIM360_Plan_Test_Case.xlsx 0.10 MB
+    	#5: [Converted] werty Core Data.pdf 3.27 MB
+    	#6: [Converted] werty Functional Programming.pdf 0.60 MB
+    	#7: [NotRegistered] werty seafile-1.2.0.apk 1.69 MB
+    	#8: [Converted] werty guide.pdf 0.28 MB
+    	#9: [Converted] werty 1.bmp 0.92 MB
+    	#10: [Converted] werty first.rvt 5.65 MB
+    	#11: [NotRegistered] werty code.m 0.00 MB
+
 
 3. Upload files(models) to OSS
 
