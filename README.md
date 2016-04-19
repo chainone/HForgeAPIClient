@@ -2,7 +2,7 @@
 A Haskell-made client that connects to Autodesk Forge (Data and View) APIs
 
 This commond line tool aims to make developers' life easier to deal with Autodesk Data and View APIs    
-One single comannd line can help you do one of the following things:
+One single comannd line can help you do one of the following things:    
 1. Remeber your app id & secret    
 
     	~ $ hforge upload ~/Desktop/school.nwd 
