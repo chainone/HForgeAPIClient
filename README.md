@@ -76,8 +76,8 @@ One single comannd line can help you do one of the following things:
     	Downloading thumbnail for object space.nwd
     	Thumbnail downloaded to /Users/chainone/space.png
     	Right ()
-
+![](thumbnailScreen.png)
 8. View the model in LMV viewer
-
+![](modelScreen.png)
 
 
