@@ -107,7 +107,7 @@ doViewModel index = do
 
 runCommander :: [String] -> IO ()
 runCommander (sub:xs) =
-      case sub of "help" -> putStrLn "1. hforge list\n 2 hforge upload file_to_upload\n 3. hforge download 0 ~/\n 4. hforge register 3 5. hforge status 2\n 6. hforge thumbnail 6"
+      case sub of "help" -> putStrLn "1. hforge list\n 2 hforge upload file_to_upload\n 3. hforge download 0 ~/\n 4. hforge register 3 5. hforge status 2\n 6. hforge thumbnail 7. hforge view "
                   "upload" -> if null xs then putStrLn "No file to upload, please specify the file path after subcommand \"upload \""
                                          else print =<< runExceptT (doUpload $ head xs)
                   "list" -> showAllOSSObjectModels dbFilePath
