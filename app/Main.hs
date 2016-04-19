@@ -69,6 +69,12 @@ doCheckStatus index = do
    token <- doGetToken
    checkStoredOSSObjectModelStatus dbFilePath index token networkManager baseURL
 
+
+doDownloadThumbnail :: Int -> FilePath -> ExceptT ServantError IO ()
+doDownloadThumbnail index dir = do
+   token <- doGetToken
+   downloadStoredOSSObjectModelThumbnail dbFilePath index dir token networkManager baseURL
+
 runCommand :: [String] -> IO ()
 runCommand (sub:xs) =
       case sub of "help" -> putStrLn "This is help info"
@@ -78,7 +84,7 @@ runCommand (sub:xs) =
                   "download" -> if length xs < 2 then putStrLn "No file to download, please specify the file name and the directory that you want to put the file in after subcommand \"download \""
                                          else print =<< runExceptT (doDownload (read (head xs)) (xs !! 1) )
                   "register" -> runExceptT (doRegister (read (head xs))) >>= print
-                  "thumbnail" -> return ()
+                  "thumbnail" -> runExceptT (doDownloadThumbnail (read (head xs)) (xs !! 1) ) >>= print
                   "status" -> runExceptT (doCheckStatus (read (head xs))) >>= print
                   _ -> putStrLn "Unknown sub command"
 

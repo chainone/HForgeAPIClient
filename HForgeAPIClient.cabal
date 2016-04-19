@@ -39,6 +39,7 @@ library
                      , process
                      , HTTP
                      , base64-bytestring
+                     , http-media
   default-language:    Haskell2010
 
 executable HForgeAPIClient-exe

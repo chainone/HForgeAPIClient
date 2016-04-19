@@ -2,6 +2,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module ViewDataApi
    ( viewDataAPI
@@ -27,10 +29,11 @@ import qualified Data.Aeson as J
 import Data.Aeson.TH
 import Data.Monoid
 import Data.Proxy
+import Data.Typeable
 import Data.Text (Text)
 import Data.ByteString.Base64 (encode)
 import qualified Data.ByteString.Char8 as BLS
-
+import qualified Network.HTTP.Media as M
 
 import GHC.Generics
 import Servant.API
@@ -119,6 +122,22 @@ data Base64OSSObjectURNJSON = Base64OSSObjectURNJSON{
 instance J.ToJSON Base64OSSObjectURNJSON
 
 
+data PNG deriving Typeable
+
+
+instance MimeUnrender PNG BL.ByteString where
+    mimeUnrender _ = Right . id
+
+-- | @Right . toStrict@
+instance MimeUnrender PNG BS.ByteString where
+    mimeUnrender _ = Right . BL.toStrict
+
+
+
+-- We declare what MIME type it represents using the great 'Network.HTTP.Media'
+-- package
+instance Accept PNG where
+    contentType _ = "image" M.// "png"
 
 ---------------------------
 -- API Declaration
@@ -129,7 +148,7 @@ type OSSUpload = "oss" :> "v2" :> "buckets" :> Capture "bucketKey" String :> "ob
 
 type RegisterViewingService = "viewingservice" :> "v1" :> "register" :> Header "Authorization" String :> ReqBody '[JSON] Base64OSSObjectURNJSON :> PostNoContent '[JSON] NoContent
 type CheckViewingServiceStatus = "viewingservice" :> "v1" :> Capture "base64ObjectURN" String :> "status" :> Header "Authorization" String :> GetNoContent '[JSON] OSSObjectInfo
-type GetViewingServiceObjectThumbnail = "viewingservice" :> "v1" :> "thumbnails" :> Capture "base64ObjectURN" String :> Header "Authorization" String :> Get '[OctetStream] BL.ByteString
+type GetViewingServiceObjectThumbnail = "viewingservice" :> "v1" :> "thumbnails" :> Capture "base64ObjectURN" String :> Header "Authorization" String :> Get '[PNG] BL.ByteString
 
 type ViewDataAPI = OxygenAuth :<|> OSSCreateBucket :<|> OSSUpload :<|> RegisterViewingService
                               :<|> CheckViewingServiceStatus :<|> GetViewingServiceObjectThumbnail

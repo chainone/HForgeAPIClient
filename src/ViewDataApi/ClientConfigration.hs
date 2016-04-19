@@ -11,6 +11,7 @@ module ViewDataApi.ClientConfigration
    ,  registerStoredOSSObjectModel
    ,  checkStoredOSSObjectModelStatus
    ,  downloadStoredOSSObjectModel
+   ,  downloadStoredOSSObjectModelThumbnail
    )where
 
 import ViewDataApi
@@ -148,3 +149,11 @@ checkStoredOSSObjectModelStatus path index token manager url = do
       model <- liftIO $ entityVal <$> getStoredOSSObjectModel path index
       liftIO . putStrLn $ "Checking status for object " ++ oSSObjectModelObjectKey model
       checkViewingServiceStatus token (oSSObjectModelObjectId model) manager url
+
+downloadStoredOSSObjectModelThumbnail :: FilePath -> Int -> FilePath -> OxygenClientToken -> Manager -> BaseUrl -> ExceptT ServantError IO ()
+downloadStoredOSSObjectModelThumbnail dbPath index dir token manager url = do
+      model <- liftIO $ entityVal <$> getStoredOSSObjectModel dbPath index
+      liftIO . putStrLn $ "Downloading thumbnail for object " ++ oSSObjectModelObjectKey model
+      let thumbnailPath = addExtension (dropExtension (dir </> oSSObjectModelObjectKey model)) "png"
+      downloadViewingServiceObjectThumbnail token (oSSObjectModelObjectId model) thumbnailPath  manager url
+      liftIO . putStrLn $ "Thumbnail downloaded to " ++  thumbnailPath
