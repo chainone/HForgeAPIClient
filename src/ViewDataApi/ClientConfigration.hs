@@ -157,3 +157,4 @@ downloadStoredOSSObjectModelThumbnail dbPath index dir token manager url = do
       let thumbnailPath = addExtension (dropExtension (dir </> oSSObjectModelObjectKey model)) "png"
       downloadViewingServiceObjectThumbnail token (oSSObjectModelObjectId model) thumbnailPath  manager url
       liftIO . putStrLn $ "Thumbnail downloaded to " ++  thumbnailPath
+      liftIO . callCommand $ "open \"" ++ thumbnailPath ++ "\""
