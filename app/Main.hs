@@ -51,14 +51,13 @@ dbFilePath = baseDirectory </> ".hforge.sqlite"
 baseURL = BaseUrl Https "developer.api.autodesk.com" 443 ""
 networkManager = unsafePerformIO $ newManager tlsManagerSettings
 
--- liftIO . print $ baseDirectory -- "C:\\Users\\Tomas"
 doUpload :: FilePath ->  ExceptT ServantError IO OSSObjectModel
 doUpload path = do
-  info <- liftIO $ getOxygenClientInfo oxygenClientInfoFilePath
-  token <- getAccessToken info accessTokenFilePath networkManager baseURL
-  liftIO . print $ token
-  bucket <- getBucketInfo token bucketFilePath networkManager baseURL
-  uploadFile dbFilePath bucket token path networkManager baseURL
+   info <- liftIO $ getOxygenClientInfo oxygenClientInfoFilePath
+   token <- getAccessToken info accessTokenFilePath networkManager baseURL
+   liftIO . print $ token
+   bucket <- getBucketInfo token bucketFilePath networkManager baseURL
+   uploadFile dbFilePath bucket token path networkManager baseURL
 
 doDownload :: Int -> FilePath ->  ExceptT ServantError IO ()
 doDownload index dir = do
