@@ -84,6 +84,7 @@ One single comannd line can help you do one of the following things:
 9. Get Bucket details
 
       ~ $ hforge.exe bucketDetails bucketkey
+      ```
       fromList
         [("policyKey",String "temporary"),
           ("bucketKey",String "bucketkey"),
