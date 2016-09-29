@@ -6,7 +6,7 @@ This commond line tool aims to make developers' life easier to deal with Autodes
 One single comannd line can help you do one of the following things:    
 1. Remeber your app id & secret    
 
-    	~ $ hforge upload ~/Desktop/school.nwd 
+    	~ $ hforge upload ~/Desktop/school.nwd
     	Enter your Autodesk Forge Client Id:
     	test
     	Enter your Autodesk Forge Client Secret:
@@ -31,7 +31,7 @@ One single comannd line can help you do one of the following things:
 
 3. Upload files(models) to OSS    
 
-    	~ $ hforge upload ~/Desktop/school.nwd 
+    	~ $ hforge upload ~/Desktop/school.nwd
     	Start uploading school.nwd
     	Right [NotRegistered] werty school.nwd 1.52 MB
 
@@ -46,7 +46,7 @@ One single comannd line can help you do one of the following things:
 
 5. Register a model    
 
-    	~ $ hforge upload ~/Desktop/space.nwd 
+    	~ $ hforge upload ~/Desktop/space.nwd
     	OxygenClientToken {token_type = "Bearer", expires_in = 1799, access_token = "LaI0uwqYDRTW2WcgjpzT8lP6Pb4B"}
     	Start uploading space.nwd
     	Right [NotRegistered] werty space.nwd 0.01 MB
@@ -56,7 +56,7 @@ One single comannd line can help you do one of the following things:
 
 6. Check the conversion status of the model    
 
-    	~ $ hforge upload ~/Desktop/school.nwd 
+    	~ $ hforge upload ~/Desktop/school.nwd
     	Enter your Autodesk Forge Client Id:
     	test
     	Enter your Autodesk Forge Client Secret:
@@ -68,7 +68,7 @@ One single comannd line can help you do one of the following things:
 
 7. View thumbnail of the model    
 
-    	~ $ hforge upload ~/Desktop/school.nwd 
+    	~ $ hforge upload ~/Desktop/school.nwd
     	Enter your Autodesk Forge Client Id:
     	test
     	Enter your Autodesk Forge Client Secret:
@@ -81,4 +81,16 @@ One single comannd line can help you do one of the following things:
 8. View the model in LMV viewer
 ![](modelScreen.png)
 
+9. Get Bucket details
 
+      ~ $ hforge.exe bucketDetails bucketkey
+      fromList
+        [("policyKey",String "temporary"),
+          ("bucketKey",String "bucketkey"),
+          ("createdDate",Number 1.47493954361e12),
+          ("bucketOwner",String "qwertyqwertyqwertyqwertyqwerty"),
+          ("permissions", Array [Object (fromList [
+          ("access",String "full"),
+          ("authId",String "qwertyqwertyqwertyqwertyqwerty")])
+        ])]
+  
