@@ -6,6 +6,7 @@ module ViewDataApi.ClientConfigration
    (  getAccessToken
    ,  getOxygenClientInfo
    ,  getBucketInfo
+   ,  getBucketDetailsInfo
    ,  uploadFile
    ,  downloadFileCURL
    ,  registerStoredOSSObjectModel
@@ -106,6 +107,12 @@ getBucketInfo token path manager baseURL = do
                                   liftIO $ putStrLn "Bucket created..."
                                   liftIO $ BL.writeFile path $ encode bkt
                                   return bkt
+
+getBucketDetailsInfo :: OxygenClientToken -> String -> Manager -> BaseUrl -> ExceptT ServantError IO Object
+getBucketDetailsInfo token bucketKey manager baseURL = do
+  bkt <- detailsOSSBucket bucketKey (Just $ tokenHeaderValue token) manager baseURL
+  liftIO $ putStrLn "Bucket details ..."
+  return bkt
 
 uploadFile :: FilePath -> OSSBucketInfo -> OxygenClientToken -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectModel
 uploadFile dbFilePath bInfo token fileToUpload manager baseURL = do

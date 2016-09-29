@@ -14,6 +14,7 @@ module ViewDataApi
    , OSSObjectInfo(..)
    , getServerAccessToken
    , createOSSBucket
+   , detailsOSSBucket
    , tokenHeaderValue
    , ossUploadFile
    , registerViewingService
@@ -144,13 +145,14 @@ instance Accept PNG where
 ---------------------------
 type OxygenAuth = "authentication" :> "v1" :> "authenticate" :> ReqBody '[FormUrlEncoded] OxygenClientInfo :> Post '[JSON] OxygenClientToken
 type OSSCreateBucket = "oss" :> "v2" :> "buckets" :> Header "Authorization" String :> ReqBody '[JSON] OSSBucketInfo :> Post '[JSON] OSSBucketInfo
+type OSSDetailsBucket = "oss" :> "v2" :> "buckets" :> Capture "bucketKey" String :> "details" :> Header "Authorization" String :> Get '[JSON] J.Object
 type OSSUpload = "oss" :> "v2" :> "buckets" :> Capture "bucketKey" String :> "objects" :> Capture "objectName" String :> Header "Authorization" String :> ReqBody '[OctetStream] BL.ByteString :> Put '[JSON] OSSObjectInfo
 
 type RegisterViewingService = "viewingservice" :> "v1" :> "register" :> Header "Authorization" String :> ReqBody '[JSON] Base64OSSObjectURNJSON :> PostNoContent '[JSON] NoContent
 type CheckViewingServiceStatus = "viewingservice" :> "v1" :> Capture "base64ObjectURN" String :> "status" :> Header "Authorization" String :> GetNoContent '[JSON] J.Object
 type GetViewingServiceObjectThumbnail = "viewingservice" :> "v1" :> "thumbnails" :> Capture "base64ObjectURN" String :> Header "Authorization" String :> Get '[PNG] BL.ByteString
 
-type ViewDataAPI = OxygenAuth :<|> OSSCreateBucket :<|> OSSUpload :<|> RegisterViewingService
+type ViewDataAPI = OxygenAuth :<|> OSSCreateBucket :<|> OSSDetailsBucket :<|> OSSUpload :<|> RegisterViewingService
                               :<|> CheckViewingServiceStatus :<|> GetViewingServiceObjectThumbnail
 
 
@@ -159,12 +161,13 @@ viewDataAPI = Proxy
 
 getServerAccessToken ::  OxygenClientInfo -> Manager -> BaseUrl -> ExceptT ServantError IO OxygenClientToken
 createOSSBucket ::  Maybe String -> OSSBucketInfo -> Manager -> BaseUrl -> ExceptT ServantError IO OSSBucketInfo
+detailsOSSBucket :: String -> Maybe String -> Manager -> BaseUrl -> ExceptT ServantError IO J.Object
 ossUpload :: String -> String -> Maybe String -> BL.ByteString -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectInfo
 registerViewingServiceRaw ::  Maybe String -> Base64OSSObjectURNJSON -> Manager -> BaseUrl -> ExceptT ServantError IO NoContent
 checkViewingServiceStatusRaw :: String -> Maybe String -> Manager -> BaseUrl -> ExceptT ServantError IO J.Object
 getViewingServiceObjectThumbnailRaw :: String -> Maybe String -> Manager -> BaseUrl -> ExceptT ServantError IO BL.ByteString
 
-getServerAccessToken :<|> createOSSBucket :<|> ossUpload :<|> registerViewingServiceRaw
+getServerAccessToken :<|> createOSSBucket :<|> detailsOSSBucket :<|> ossUpload :<|> registerViewingServiceRaw
                      :<|> checkViewingServiceStatusRaw  :<|> getViewingServiceObjectThumbnailRaw = client viewDataAPI
 
 ossUploadFile :: OxygenClientToken -> String -> FilePath -> Manager -> BaseUrl -> ExceptT ServantError IO OSSObjectInfo
