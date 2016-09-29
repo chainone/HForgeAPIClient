@@ -51,15 +51,13 @@ dbFilePath = baseDirectory </> ".hforge.sqlite"
 baseURL = BaseUrl Https "developer.api.autodesk.com" 443 ""
 networkManager = unsafePerformIO $ newManager tlsManagerSettings
 
-
 doUpload :: FilePath ->  ExceptT ServantError IO OSSObjectModel
 doUpload path = do
-      info <- liftIO $ getOxygenClientInfo oxygenClientInfoFilePath
-      token <- getAccessToken info accessTokenFilePath networkManager baseURL
-      liftIO . print $ token
-      bucket <- getBucketInfo token bucketFilePath networkManager baseURL
-      uploadFile dbFilePath bucket token path networkManager baseURL
-
+   info <- liftIO $ getOxygenClientInfo oxygenClientInfoFilePath
+   token <- getAccessToken info accessTokenFilePath networkManager baseURL
+   liftIO . print $ token
+   bucket <- getBucketInfo token bucketFilePath networkManager baseURL
+   uploadFile dbFilePath bucket token path networkManager baseURL
 
 doDownload :: Int -> FilePath ->  ExceptT ServantError IO ()
 doDownload index dir = do
@@ -105,9 +103,15 @@ doViewModel index = do
       liftIO $ generateViewingFiles token $ (toBase64 . oSSObjectModelObjectId) model
       liftIO $ callCommand $ "open " ++ forgeViewingHtmlFilePath
 
+doBucketDetails :: String -> ExceptT ServantError IO ()
+doBucketDetails bucketKey = do
+   token <- doGetToken
+   bucket <- getBucketDetailsInfo token bucketKey networkManager baseURL
+   liftIO . print $ bucket
+
 runCommander :: [String] -> IO ()
 runCommander (sub:xs) =
-      case sub of "help" -> putStrLn "1. hforge list\n 2 hforge upload file_to_upload\n 3. hforge download 0 ~/\n 4. hforge register 3 5. hforge status 2\n 6. hforge thumbnail 7. hforge view "
+      case sub of "help" -> putStrLn "1. hforge list\n 2 hforge upload file_to_upload\n 3. hforge download 0 ~/\n 4. hforge register 3 5. hforge status 2\n 6. hforge thumbnail\n 7. hforge view \n 8. hforge bucketDetails"
                   "upload" -> if null xs then putStrLn "No file to upload, please specify the file path after subcommand \"upload \""
                                          else print =<< runExceptT (doUpload $ head xs)
                   "list" -> showAllOSSObjectModels dbFilePath
@@ -117,6 +121,7 @@ runCommander (sub:xs) =
                   "thumbnail" -> runExceptT (doDownloadThumbnail (read (head xs)) (xs !! 1) ) >>= print
                   "status" -> runExceptT (doCheckStatus (read (head xs))) >>= print
                   "view" -> runExceptT (doViewModel (read (head xs))) >>= print
+                  "bucketDetails" -> runExceptT (doBucketDetails (head xs)) >>= print
                   _ -> putStrLn "Unknown sub command"
 
 main :: IO ()
